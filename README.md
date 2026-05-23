@@ -1,4 +1,3 @@
-````markdown
 # 🚀 YouTube Video Summarizer AI
 
 <div align="center">
