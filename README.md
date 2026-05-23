@@ -235,5 +235,3 @@ This project is licensed under the MIT License.
 ### Built with ❤️ using AI & Python
 
 </div>
-berpunk / Modern SaaS
- 
