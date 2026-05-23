@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YouTube Summarizer</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700;900&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #020008;
+      color: #e0e0e0;
+      font-family: 'Tajawal', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===== خلفية 3D ===== */
+    .bg-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .grid-3d {
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      top: -50%;
+      left: -50%;
+      background-image:
+        linear-gradient(rgba(255, 60, 60, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 60, 60, 0.07) 1px, transparent 1px);
+      background-size: 60px 60px;
+      transform: perspective(800px) rotateX(60deg);
+      animation: gridMove 8s linear infinite;
+    }
+
+    @keyframes gridMove {
+      0%   { background-position: 0 0; }
+      100% { background-position: 0 60px; }
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.25;
+      animation: orbFloat 10s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, #ff2020, transparent);
+      top: -100px; left: -100px;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, #7000ff, transparent);
+      bottom: -100px; right: -100px;
+      animation-delay: 3s;
+    }
+
+    .orb-3 {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, #ff6000, transparent);
+      top: 50%; left: 50%;
+      animation-delay: 6s;
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50%       { transform: translate(30px, -30px) scale(1.1); }
+    }
+
+    /* ===== المحتوى ===== */
+    .content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 20px;
+    }
+
+    /* ===== Header ===== */
+    .header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .header .badge {
+      display: inline-block;
+      background: rgba(255, 60, 60, 0.15);
+      border: 1px solid rgba(255, 60, 60, 0.3);
+      color: #ff6060;
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+    }
+
+    .header h1 {
+      font-size: 3.5rem;
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .header h1 .line1 {
+      display: block;
+      color: #fff;
+    }
+
+    .header h1 .line2 {
+      display: block;
+      background: linear-gradient(90deg, #ff2020, #ff6000, #ff2020);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shine 3s linear infinite;
+    }
+
+    @keyframes shine {
+      0%   { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
+    .header p {
+      color: #666;
+      font-size: 1.1rem;
+    }
+
+    /* ===== Input Card ===== */
+    .input-card {
+      width: 100%;
+      max-width: 780px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 32px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(20px);
+      box-shadow:
+        0 0 0 1px rgba(255,60,60,0.05),
+        0 30px 60px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+      transform: perspective(1000px) rotateX(1deg);
+      transition: transform 0.3s;
+    }
+
+    .input-card:hover {
+      transform: perspective(1000px) rotateX(0deg) translateY(-4px);
+    }
+
+    .input-label {
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-label::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: #ff4040;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 16px 20px;
+      color: #fff;
+      font-size: 1rem;
+      font-family: 'Tajawal', sans-serif;
+      outline: none;
+      direction: ltr;
+      transition: all 0.3s;
+    }
+
+    input[type="text"]:focus {
+      border-color: rgba(255, 60, 60, 0.5);
+      background: rgba(255,60,60,0.05);
+      box-shadow: 0 0 20px rgba(255,60,60,0.1);
+    }
+
+    .btn-summarize {
+      background: linear-gradient(135deg, #ff2020, #ff6000);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 16px 28px;
+      font-size: 1rem;
+      font-family: 'Tajawal', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+      box-shadow: 0 8px 25px rgba(255,60,60,0.3);
+    }
+
+    .btn-summarize::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn-summarize:hover::before { left: 100%; }
+    .btn-summarize:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(255,60,60,0.4); }
+    .btn-summarize:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ===== Loader ===== */
+    .loader-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .loader-wrap.active { display: flex; }
+
+    .loader-ring {
+      width: 50px; height: 50px;
+      border: 3px solid rgba(255,60,60,0.1);
+      border-top-color: #ff4040;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loader-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #555;
+      font-size: 0.9rem;
+      transition: color 0.3s;
+    }
+
+    .step.active { color: #ff6060; }
+    .step.done   { color: #50ff80; }
+
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: #ff6060;
+      min-height: 20px;
+    }
+
+    /* ===== Result Card ===== */
+    .result-card {
+      display: none;
+      width: 100%;
+      max-width: 780px;
+      animation: fadeUp 0.6s ease;
+    }
+
+    .result-card.visible { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* فيديو embed */
+    .video-wrap {
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.06);
+      position: relative;
+    }
+
+    .video-wrap iframe {
+      width: 100%;
+      height: 340px;
+      border: none;
+      display: block;
+    }
+
+    /* بطاقات الملخص */
+    .summary-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 18px;
+      padding: 24px;
+      backdrop-filter: blur(10px);
+      transform: perspective(800px) rotateX(0.5deg);
+      transition: transform 0.3s, box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--accent);
+      border-radius: 0 18px 18px 0;
+    }
+
+    .section-card:hover {
+      transform: perspective(800px) rotateX(0deg) translateY(-3px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+
+    .section-card.general  { --accent: linear-gradient(180deg, #ff4040, #ff6000); }
+    .section-card.points   { --accent: linear-gradient(180deg, #7000ff, #b040ff); }
+    .section-card.quotes   { --accent: linear-gradient(180deg, #0080ff, #00c0ff); }
+    .section-card.arabic   { --accent: linear-gradient(180deg, #00c060, #00ff80); }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .section-card.general .section-icon  { background: rgba(255,60,60,0.15); }
+    .section-card.points  .section-icon  { background: rgba(112,0,255,0.15); }
+    .section-card.quotes  .section-icon  { background: rgba(0,128,255,0.15); }
+    .section-card.arabic  .section-icon  { background: rgba(0,192,96,0.15); }
+
+    .section-body {
+      color: #b0b0b0;
+      line-height: 2;
+      font-size: 0.97rem;
+      white-space: pre-wrap;
+    }
+
+    /* أزرار الأكشن */
+    .action-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn-action {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: #ccc;
+      font-family: 'Tajawal', sans-serif;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-action:hover {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+
+    .btn-new {
+      background: linear-gradient(135deg, #ff2020, #ff6000);
+      border: none;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .btn-new:hover {
+      box-shadow: 0 8px 25px rgba(255,60,60,0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- خلفية 3D -->
+  <div class="bg-canvas">
+    <div class="grid-3d"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="content">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="badge">✦ AI POWERED</div>
+      <h1>
+        <span class="line1">لخّص أي فيديو</span>
+        <span class="line2">في ثوانٍ</span>
+      </h1>
+      <p>الصق رابط YouTube وخلّي الذكاء الاصطناعي يشتغل</p>
+    </div>
+
+    <!-- Input -->
+    <div class="input-card">
+      <div class="input-label">رابط الفيديو</div>
+      <div class="input-row">
+        <input type="text" id="urlInput" placeholder="https://www.youtube.com/watch?v=..." />
+        <button class="btn-summarize" id="summarizeBtn" onclick="summarize()">⚡ لخّص</button>
+      </div>
+
+      <div class="loader-wrap" id="loader">
+        <div style="display:flex; align-items:center; gap:16px; width:100%;">
+          <div class="loader-ring"></div>
+          <div class="loader-steps">
+            <div class="step" id="step1"><div class="step-dot"></div> جلب النص من الفيديو...</div>
+            <div class="step" id="step2"><div class="step-dot"></div> تحليل المحتوى بالذكاء الاصطناعي...</div>
+            <div class="step" id="step3"><div class="step-dot"></div> تنظيم الملخص...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="status" id="status"></div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-card" id="resultCard">
+
+      <div class="video-wrap" id="videoWrap"></div>
+
+      <div class="summary-sections" id="summarySections"></div>
+
+      <div class="action-row">
+        <button class="btn-action" onclick="copyAll()">📋 نسخ الملخص</button>
+        <button class="btn-action btn-new" onclick="resetForm()">🔄 فيديو جديد</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    let fullSummary = "";
+
+    async function summarize() {
+      const url = document.getElementById("urlInput").value.trim();
+      const btn = document.getElementById("summarizeBtn");
+      const loader = document.getElementById("loader");
+      const status = document.getElementById("status");
+      const resultCard = document.getElementById("resultCard");
+
+      if (!url) {
+        status.textContent = "⚠️ أدخل رابط الفيديو أولاً";
+        return;
+      }
+
+      btn.disabled = true;
+      loader.classList.add("active");
+      status.textContent = "";
+      resultCard.classList.remove("visible");
+
+      // Steps animation
+      animateSteps();
+
+      try {
+        const response = await fetch("/summarize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          status.textContent = "❌ " + data.error;
+          return;
+        }
+
+        fullSummary = data.summary;
+
+        // عرض الفيديو
+        document.getElementById("videoWrap").innerHTML = `
+          <iframe src="https://www.youtube.com/embed/${data.video_id}" allowfullscreen></iframe>
+        `;
+
+        // تقسيم الملخص لبطاقات
+        renderSummary(data.summary);
+        resultCard.classList.add("visible");
+
+      } catch (err) {
+        status.textContent = "❌ خطأ في الاتصال";
+      } finally {
+        btn.disabled = false;
+        loader.classList.remove("active");
+        resetSteps();
+      }
+    }
+
+    function renderSummary(text) {
+      const sections = document.getElementById("summarySections");
+      sections.innerHTML = "";
+
+      // تقسيم بناءً على العناوين
+      const parts = text.split(/\n(?=\*\*|##|[١-٩]\.|\d\.)/);
+
+      const cards = [
+        { icon: "📄", title: "الملخص العام",    cls: "general" },
+        { icon: "🎯", title: "النقاط الرئيسية", cls: "points"  },
+        { icon: "💬", title: "أبرز الاقتباسات", cls: "quotes"  },
+        { icon: "🌐", title: "ملخص بالعربي",    cls: "arabic"  },
+      ];
+
+      // لو الـ AI رجع نص كامل بدون تقسيم واضح، احطه ببطاقة وحدة
+      if (parts.length <= 1) {
+        sections.innerHTML = `
+          <div class="section-card general">
+            <div class="section-title">
+              <div class="section-icon">📄</div>
+              الملخص الكامل
+            </div>
+            <div class="section-body">${text}</div>
+          </div>
+        `;
+        return;
+      }
+
+      // قسّم على البطاقات
+      parts.forEach((part, i) => {
+        if (!part.trim()) return;
+        const card = cards[i] || { icon: "📝", title: `قسم ${i+1}`, cls: "general" };
+        const div = document.createElement("div");
+        div.className = `section-card ${card.cls}`;
+        div.innerHTML = `
+          <div class="section-title">
+            <div class="section-icon">${card.icon}</div>
+            ${card.title}
+          </div>
+          <div class="section-body">${part.replace(/\*\*/g, "").trim()}</div>
+        `;
+        sections.appendChild(div);
+      });
+    }
+
+    function animateSteps() {
+      const steps = ["step1", "step2", "step3"];
+      let i = 0;
+      window._stepInterval = setInterval(() => {
+        if (i > 0) document.getElementById(steps[i-1]).className = "step done";
+        if (i < steps.length) {
+          document.getElementById(steps[i]).className = "step active";
+          i++;
+        }
+      }, 1500);
+    }
+
+    function resetSteps() {
+      clearInterval(window._stepInterval);
+      ["step1","step2","step3"].forEach(s => {
+        document.getElementById(s).className = "step";
+      });
+    }
+
+    function copyAll() {
+      navigator.clipboard.writeText(fullSummary).then(() => {
+        const btn = document.querySelector(".btn-action");
+        btn.textContent = "✅ تم النسخ!";
+        setTimeout(() => btn.textContent = "📋 نسخ الملخص", 2000);
+      });
+    }
+
+    function resetForm() {
+      document.getElementById("urlInput").value = "";
+      document.getElementById("resultCard").classList.remove("visible");
+      document.getElementById("status").textContent = "";
+      document.getElementById("urlInput").focus();
+    }
+
+    document.getElementById("urlInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") summarize();
+    });
+  </script>
+
+</body>
+</html>
